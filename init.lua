@@ -4,7 +4,7 @@ local M = {}
 ---@param ... string Will be concatenated before being written
 local function err_message(...)
   vim.notify(table.concat(vim.iter({ ... }):flatten():totable()), vim.log.levels.ERROR)
-  api.nvim_command('redraw')
+  vim.api.nvim_command('redraw')
 end
 
 function M.resolve_git_dir(bufnr)
@@ -19,12 +19,14 @@ function M.resolve_package_json_dir(bufnr)
   return package_json_dir
 end
 
-function M.make_settings(git_dir, package_json_dir)
-  return {
+function M.make_settings(buffer)
+  local settings_with_function = vim.tbl_deep_extend('keep', M.user_config.settings or {}, {
     validate = 'on',
     -- packageManager = 'pnpm',
     useESLintClass = true,
-    useFlatConfig = M.use_flat_config(package_json_dir),
+    useFlatConfig = function(bufnr)
+      return M.use_flat_config(bufnr)
+    end,
     experimental = {
       useFlatConfig = false,
     },
@@ -49,17 +51,29 @@ function M.make_settings(git_dir, package_json_dir)
     problems = {
       shortenToSingleLine = false,
     },
-    -- nodePath configures the directory in which the eslint server should start its node_modules resolution.
-    -- This path is relative to the workspace folder (root dir) of the server instance.
-    nodePath = M.resolve_node_path(),
-    -- use the workspace folder location or the file location (if no workspace folder is open) as the working directory
-    workingDirectory = { directory = package_json_dir },
-    workspaceFolder = {
-      uri = git_dir,
-      name = vim.fn.fnamemodify(git_dir, ':t'),
-    },
+    nodePath = function(bufnr)
+      return M.resolve_node_path()
+    end,
+    workingDirectory = { mode = 'location' },
+    workspaceFolder = function(bufnr)
+      local git_dir = M.resolve_git_dir(bufnr)
+      return {
+        uri = vim.uri_from_fname(git_dir),
+        name = vim.fn.fnamemodify(git_dir, ':t'),
+      }
+    end,
 
-  }
+  })
+
+  local flattened_settings = {}
+  for k, v in pairs(settings_with_function) do
+    if type(v) == 'function' then
+      flattened_settings[k] = v(buffer)
+    else
+      flattened_settings[k] = v
+    end
+  end
+  return flattened_settings
 end
 
 function M.make_client_capabilities()
@@ -68,7 +82,8 @@ function M.make_client_capabilities()
   return default_capabilities
 end
 
-function M.use_flat_config(root_dir)
+function M.use_flat_config(bufnr)
+  local root_dir = M.resolve_package_json_dir(bufnr)
   if
       vim.fn.filereadable(root_dir .. '/eslint.config.js') == 1
       or vim.fn.filereadable(root_dir .. '/eslint.config.mjs') == 1
@@ -102,7 +117,10 @@ function M.resolve_node_path()
 end
 
 function M.create_cmd()
-  local debug = false -- for debugging language server
+  local debug = false
+  if M.user_config and M.user_config.debug then
+    debug = true
+  end
   if debug then
     return { 'node', '--inspect-brk', vim.fn.stdpath('config') ..
     '/lua/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
@@ -110,20 +128,20 @@ function M.create_cmd()
   return { 'node', vim.fn.stdpath('config') .. '/lua/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
 end
 
-function M.setup_autocmd()
+function M.setup_lsp_start()
   vim.api.nvim_create_autocmd('FileType', {
-    pattern = { 'typescript', 'typescriptreact' },
+    pattern = vim.tbl_extend('force',
+      { 'javascript', 'javascriptreact', 'javascript.jsx', 'typescript', 'typescriptreact', 'typescript.tsx', 'vue',
+        'svelte', 'astro', }, M.user_config.filetypes or {}),
     callback = function(args)
-      local git_dir = M.resolve_git_dir(args.buf)
-      local package_json_dir = M.resolve_package_json_dir(args.buf)
       vim.lsp.start({
         name = 'eslint',
-        cmd = M.create_cmd(),
-        root_dir = git_dir,
-        settings = M.make_settings(git_dir, package_json_dir),
-        capabilities = M.make_client_capabilities(),
-        handlers = {
-          ["workspace/configuration"] = function (_, result, ctx)
+        cmd = M.user_config.cmd or M.create_cmd(),
+        root_dir = M.user_config.root_dir or M.resolve_git_dir(args.buf),
+        settings = M.make_settings(args.buf),
+        capabilities = M.user_config.capabilities or M.make_client_capabilities(),
+        handlers = vim.tbl_deep_extend('keep', M.user_config.handlers or {}, {
+          ["workspace/configuration"] = function(_, result, ctx)
             local function lookup_section(table, section)
               local keys = vim.split(section, '.', { plain = true }) --- @type string[]
               return vim.tbl_get(table, unpack(keys))
@@ -145,9 +163,7 @@ function M.setup_autocmd()
 
             --- Insert custom logic to update client settings
             local bufnr = vim.uri_to_bufnr(result.items[1].scopeUri)
-            local new_git_dir = M.resolve_git_dir(bufnr)
-            local new_package_json_dir = M.resolve_package_json_dir(bufnr)
-            local new_settings = M.make_settings(new_git_dir, new_package_json_dir)
+            local new_settings = M.make_settings(bufnr)
             client.settings = new_settings
             --- end custom logic
 
@@ -167,14 +183,17 @@ function M.setup_autocmd()
             end
             return response
           end
-        }
+        })
       })
     end
   })
 end
 
-function M.setup()
-  M.setup_autocmd()
+function M.setup(user_config)
+  if user_config then
+    M.user_config = user_config
+  end
+  M.setup_lsp_start()
 end
 
 return M
