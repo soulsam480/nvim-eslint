@@ -102,7 +102,7 @@ function M.resolve_node_path()
 end
 
 function M.create_cmd()
-  local debug = true -- for debugging language server
+  local debug = false -- for debugging language server
   if debug then
     return { 'node', '--inspect-brk', vim.fn.stdpath('config') ..
     '/lua/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
@@ -142,10 +142,6 @@ function M.setup_autocmd()
             if not result.items then
               return {}
             end
-            
-            print('result', vim.inspect(result))
-
-            print('ctx', vim.inspect(ctx))
 
             --- Insert custom logic to update client settings
             local bufnr = vim.uri_to_bufnr(result.items[1].scopeUri)
@@ -153,10 +149,7 @@ function M.setup_autocmd()
             local new_package_json_dir = M.resolve_package_json_dir(bufnr)
             local new_settings = M.make_settings(new_git_dir, new_package_json_dir)
             client.settings = new_settings
-            print 'client.settings updated'
             --- end custom logic
-            
-            print('client.settings', vim.inspect(client.settings))
 
             local response = {}
             for _, item in ipairs(result.items) do
