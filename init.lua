@@ -7,6 +7,11 @@ local function err_message(...)
   vim.api.nvim_command('redraw')
 end
 
+function M.get_plugin_root()
+    local str = debug.getinfo(1, "S").source:sub(2)
+    return vim.fn.fnamemodify(str, ":p:h:h")
+end
+
 function M.resolve_git_dir(bufnr)
   local markers = { '.git' }
   local git_dir = vim.fs.root(bufnr, markers);
@@ -122,10 +127,10 @@ function M.create_cmd()
     debug = true
   end
   if debug then
-    return { 'node', '--inspect-brk', vim.fn.stdpath('config') ..
-    '/lua/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
+    return { 'node', '--inspect-brk', M.get_plugin_root() ..
+    '/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
   end
-  return { 'node', vim.fn.stdpath('config') .. '/lua/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
+  return { 'node', M.get_plugin_root() .. '/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
 end
 
 function M.setup_lsp_start()
