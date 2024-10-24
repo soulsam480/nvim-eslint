@@ -9,7 +9,7 @@ end
 
 function M.get_plugin_root()
     local str = debug.getinfo(1, "S").source:sub(2)
-    return vim.fn.fnamemodify(str, ":p:h:h")
+    return vim.fn.fnamemodify(str, ":p:h:h:h")
 end
 
 function M.resolve_git_dir(bufnr)
@@ -128,9 +128,9 @@ function M.create_cmd()
   end
   if debug then
     return { 'node', '--inspect-brk', M.get_plugin_root() ..
-    '/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
+    '/vscode-eslint/server/out/eslintServer.js', '--stdio' }
   end
-  return { 'node', M.get_plugin_root() .. '/nvim-eslint/vscode-eslint/server/out/eslintServer.js', '--stdio' }
+  return { 'node', M.get_plugin_root() .. '/vscode-eslint/server/out/eslintServer.js', '--stdio' }
 end
 
 function M.setup_lsp_start()
