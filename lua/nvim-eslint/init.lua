@@ -142,7 +142,7 @@ function M.setup_lsp_start()
       vim.lsp.start({
         name = 'eslint',
         cmd = M.user_config.cmd or M.create_cmd(),
-        root_dir = M.user_config.root_dir or M.resolve_git_dir(args.buf),
+        root_dir = M.user_config.root_dir and M.user_config.root_dir(args.buf) or M.resolve_git_dir(args.buf),
         settings = M.make_settings(args.buf),
         capabilities = M.user_config.capabilities or M.make_client_capabilities(),
         handlers = vim.tbl_deep_extend('keep', M.user_config.handlers or {}, {
