@@ -180,8 +180,6 @@ All `vscode-eslint` settings options mentioned below is located at their [docs](
 
 ## Debugging
 
-## Debugging
-
 If the linter doesn't work for your project, there are several ways to troubleshoot.
 
 First, enable debug level logs for Nvim LSP with `vim.lsp.set_log_level('debug')`. This will show detailed requests and responses sent to and received from the ESLint language server, helping you identify issues related to configuration, handlers, or the language server startup.
