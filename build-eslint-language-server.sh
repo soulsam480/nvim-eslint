@@ -7,6 +7,7 @@ if [ "$1" == "--debug" ]; then
 fi
 
 # Clone the repository
+rm -rf vscode-eslint
 git clone https://github.com/microsoft/vscode-eslint.git 
 
 # Checkout the given release version
