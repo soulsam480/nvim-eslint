@@ -137,7 +137,8 @@ All `vscode-eslint` settings options mentioned below is located at their [docs](
 
     This option can be a bit tricky if you are using [ESLint flat config files](https://eslint.org/docs/latest/use/configure/configuration-files). The original explantion in `vscode-eslint`:
 
-    ![useFlatConfig](./images/useFlatConfig.png)
+    ![useFlatConfig](https://github.com/user-attachments/assets/8a904a28-6449-4825-9fad-914edd3af28b)
+
 
     According to the doc, there are following scenarios:
 
