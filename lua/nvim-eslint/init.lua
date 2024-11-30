@@ -1,1 +1,1 @@
-return require('nvim-eslint.client')
+return require("nvim-eslint.client")
