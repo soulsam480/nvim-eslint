@@ -5,6 +5,7 @@ local eslint_config_files = {
 	".eslintrc.js",
 	".eslintrc.yml",
 	".eslint.json",
+	"eslint.config.js",
 	"eslint.config.cjs",
 	"eslint.config.mjs",
 	"eslint.config.ts",
