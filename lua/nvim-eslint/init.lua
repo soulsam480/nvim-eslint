@@ -161,6 +161,43 @@ function M.check_config_presence()
 	return false -- Return false if no ESLint config files are found
 end
 
+-- https://github.com/neovim/nvim-lspconfig/blob/master/lua/lspconfig/configs/eslint.lua#L4
+local function fix_all(opts)
+	opts = opts or {}
+
+	local util = require("lspconfig.util")
+
+	local eslint_lsp_client = util.get_active_client_by_name(opts.bufnr, "eslint")
+	if eslint_lsp_client == nil then
+		return
+	end
+
+	local request
+
+	if opts.sync then
+		---@diagnostic disable-next-line: unused-function
+		request = function(bufnr, method, params)
+			eslint_lsp_client.request_sync(method, params, nil, bufnr)
+		end
+	else
+		---@diagnostic disable-next-line: unused-function
+		request = function(bufnr, method, params)
+			eslint_lsp_client.request(method, params, nil, bufnr)
+		end
+	end
+
+	local bufnr = util.validate_bufnr(opts.bufnr or 0)
+	request(0, "workspace/executeCommand", {
+		command = "eslint.applyAllFixes",
+		arguments = {
+			{
+				uri = vim.uri_from_bufnr(bufnr),
+				version = vim.lsp.util.buf_versions[bufnr],
+			},
+		},
+	})
+end
+
 function M.setup_lsp_start()
 	vim.api.nvim_create_autocmd("FileType", {
 		pattern = vim.tbl_extend("force", {
@@ -227,6 +264,15 @@ function M.setup_lsp_start()
 				}),
 			})
 		end,
+	})
+
+	vim.api.nvim_create_user_command("EslintFixAll", function()
+		fix_all({
+			sync = true,
+			bufnr = true,
+		})
+	end, {
+		desc = "Fix all auto fixable problems for this current buffer",
 	})
 end
 
