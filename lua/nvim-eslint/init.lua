@@ -269,7 +269,7 @@ function M.setup_lsp_start()
 	vim.api.nvim_create_user_command("EslintFixAll", function()
 		fix_all({
 			sync = true,
-			bufnr = true,
+			bufnr = 0,
 		})
 	end, {
 		desc = "Fix all auto fixable problems for this current buffer",
