@@ -117,12 +117,6 @@ start_client_for_buffer = function(bufnr)
 		settings = M.make_settings(bufnr),
 		capabilities = user_config.capabilities or M.make_client_capabilities(),
 		on_attach = function(client, buffer)
-			ensure_watches(client, buffer)
-
-			if user_on_attach then
-				pcall(user_on_attach, client, buffer)
-			end
-
 			vim.api.nvim_buf_create_user_command(bufnr, "EslintFixAll", function()
 				client:request_sync("workspace/executeCommand", {
 					command = "eslint.applyAllFixes",
@@ -133,7 +127,13 @@ start_client_for_buffer = function(bufnr)
 						},
 					},
 				}, nil, bufnr)
-			end, {})
+			end, { desc = "Fix all auto fixable issues" })
+
+			ensure_watches(client, buffer)
+
+			if user_on_attach then
+				pcall(user_on_attach, client, buffer)
+			end
 		end,
 		on_exit = function(code, signal, client_id)
 			watchers.unregister(client_id)
