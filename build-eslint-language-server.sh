@@ -1,31 +1,39 @@
 #!/bin/bash
 
-# Check if --debug option is provided
+set -e
+
 DEBUG_MODE=false
 if [ "$1" == "--debug" ]; then
   DEBUG_MODE=true
 fi
 
-# Clone the repository
 rm -rf vscode-eslint
-git clone https://github.com/microsoft/vscode-eslint.git 
 
-# Checkout the given release version
+git clone https://github.com/microsoft/vscode-eslint.git
 cd vscode-eslint
-git checkout release/3.0.10
+
+git checkout release/3.0.24
+
 npm install
 
-# Build the eslint language server
 cd server
 npm install
 npm run webpack
 
-# If not in debug mode, clean up unnecessary files
+cd ../..
+
 if [ "$DEBUG_MODE" == "false" ]; then
-  cd ../../
-  echo "Cleaning up the repository except for ./vscode-eslint/server/out..."
-  find ./vscode-eslint -mindepth 1 ! -regex '^./vscode-eslint/server\(/.*\)?' -delete
-  find ./vscode-eslint/server -mindepth 1 ! -regex '^./vscode-eslint/server/out\(/.*\)?' -delete
+  echo "Cleaning up everything except server/out..."
+
+  mkdir -p /tmp/vscode-eslint-out
+  cp -R vscode-eslint/server/out /tmp/vscode-eslint-out/
+
+  rm -rf vscode-eslint
+
+  mkdir -p vscode-eslint/server
+  cp -R /tmp/vscode-eslint-out/out vscode-eslint/server/
+
+  rm -rf /tmp/vscode-eslint-out
 else
   echo "Skipping cleanup due to --debug mode."
 fi
